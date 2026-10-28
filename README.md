@@ -36,7 +36,7 @@ Setelah deploy, akses aplikasi di URL yang di-hosting.
 
 ```bash
 # Clone repository
-git clone https://github.com/USERNAME/mangaku.git
+git clone https://github.com/klemens13/mangaku.git
 cd mangaku
 
 # Install dependencies

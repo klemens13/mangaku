@@ -3,6 +3,9 @@ import { Manga, Chapter } from '../types';
 
 const MANGADEX_API = 'https://api.mangadex.org';
 
+// Hanya tampilkan konten yang aman untuk semua umur
+const CONTENT_RATING = ['safe', 'suggestive'];
+
 // Helper untuk delay agar tidak melebihi rate limit
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -20,7 +23,7 @@ export const mangadexAPI = {
           offset,
           'order[followedCount]': 'desc',
           'includes[]': ['cover_art', 'author', 'artist'],
-          'contentRating[]': ['safe', 'suggestive'],
+          'contentRating[]': CONTENT_RATING,
           'availableTranslatedLanguage[]': ['id', 'en']
         }
       });
@@ -44,7 +47,7 @@ export const mangadexAPI = {
           title,
           limit,
           'includes[]': ['cover_art', 'author', 'artist'],
-          'contentRating[]': ['safe', 'suggestive'],
+          'contentRating[]': CONTENT_RATING,
           'availableTranslatedLanguage[]': ['id', 'en']
         }
       });
@@ -68,6 +71,11 @@ export const mangadexAPI = {
           'includes[]': ['cover_art', 'author', 'artist']
         }
       });
+
+      // Endpoint detail tidak mendukung filter contentRating, jadi cek manual
+      if (!CONTENT_RATING.includes(response.data.data?.attributes?.contentRating)) {
+        return null;
+      }
 
       const manga = this.transformManga(response.data.data);
       
@@ -93,6 +101,7 @@ export const mangadexAPI = {
         params: {
           limit,
           'translatedLanguage[]': ['id', 'en'],
+          'contentRating[]': CONTENT_RATING,
           'order[chapter]': 'asc',
           'includeFuturePublishAt': 0
         }

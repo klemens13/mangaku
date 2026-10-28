@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Manga, ReadingProgress } from '../types';
 import { mangadexAPI } from '../services/mangadex';
+import MangaCover from './MangaCover';
 
 interface Props {
   mangaList: Manga[];
@@ -167,7 +168,7 @@ export default function MangaList({ mangaList, progress, bookmarks, onSelectMang
               >
                 {/* Cover */}
                 <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-[#1a1a2e]">
-                  <img
+                  <MangaCover
                     src={manga.cover}
                     alt={manga.title}
                     className="w-full h-full object-cover"

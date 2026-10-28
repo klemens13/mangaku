@@ -1,5 +1,6 @@
 import { Manga, ReadingProgress } from '../types';
 import { isChapterDownloaded } from '../utils/storage';
+import MangaCover from './MangaCover';
 
 interface Props {
   manga: Manga;
@@ -23,7 +24,7 @@ export default function MangaDetail({ manga, progress, isBookmarked, onBack, onR
     <div className="min-h-screen">
       {/* Hero Section */}
       <div className="relative h-64">
-        <img
+        <MangaCover
           src={manga.cover}
           alt={manga.title}
           className="w-full h-full object-cover"
@@ -52,7 +53,7 @@ export default function MangaDetail({ manga, progress, isBookmarked, onBack, onR
       {/* Info Section */}
       <div className="px-4 -mt-16 relative">
         <div className="flex gap-4">
-          <img
+          <MangaCover
             src={manga.cover}
             alt={manga.title}
             className="w-24 h-32 rounded-lg object-cover shadow-xl border-2 border-[#1a1a2e]"

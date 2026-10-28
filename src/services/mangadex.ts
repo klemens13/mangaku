@@ -179,10 +179,10 @@ export const mangadexAPI = {
                        Object.values(attributes.description)[0] || 
                        '';
 
-    // Get cover URL
+    // Get cover URL (format .512.jpg lebih andal; fallback placeholder di UI jika kosong)
     const coverFileName = coverRel?.attributes?.fileName;
     const cover = coverFileName 
-      ? `https://uploads.mangadex.org/covers/${id}/${coverFileName}.256.jpg`
+      ? `https://uploads.mangadex.org/covers/${id}/${coverFileName}.512.jpg`
       : '';
 
     // Get author
@@ -237,6 +237,6 @@ export const mangadexAPI = {
    * Get cover URL
    */
   getCoverUrl(mangaId: string, coverFileName: string): string {
-    return `https://uploads.mangadex.org/covers/${mangaId}/${coverFileName}.256.jpg`;
+    return `https://uploads.mangadex.org/covers/${mangaId}/${coverFileName}.512.jpg`;
   }
 };

@@ -1,5 +1,5 @@
 // Naikkan versi ini setiap rilis agar cache lama dibersihkan
-const CACHE_NAME = 'mangaku-cache-v2';
+const CACHE_NAME = 'mangaku-cache-v3';
 // Cache gambar chapter yang diunduh pengguna (dikelola dari aplikasi)
 const IMAGE_CACHE_NAME = 'mangaku-images-v1';
 const OFFLINE_URL = '/';
@@ -40,17 +40,23 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // For images, use cache-first strategy
+  // For images, use cache-first strategy (hanya cache respons yang benar-benar sukses)
   if (event.request.destination === 'image') {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
         return fetch(event.request).then((response) => {
+          // Jangan simpan respons error/redirect kosong ke cache,
+          // supaya kegagalan gambar sementara bisa dicoba ulang nanti.
+          // Catatan: jangan gunakan response.clone() di sini — untuk respons
+          // opaque lintas-origin (mis. uploads.mangadex.org via <img>) clone()
+          // bisa gagal dan membuat gambar tidak tampil sama sekali.
           if (response.ok) {
-            const clone = response.clone();
+            const toCache = new Response(response.body, response);
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
+              cache.put(event.request, toCache);
+            }).catch(() => {});
+            return toCache;
           }
           return response;
         }).catch(() => {

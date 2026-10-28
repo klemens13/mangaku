@@ -5,6 +5,15 @@ Semua perubahan signifikan pada project ini akan didokumentasikan di file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
+## [1.0.1] - 2026-10-28
+
+### 🐛 Perbaikan Bug
+
+#### Gambar Cover Manga Tidak Muncul
+- 🖼️ Semua tag `<img>` cover diganti komponen `MangaCover` baru (`src/components/MangaCover.tsx`) yang otomatis menampilkan placeholder jika URL cover kosong atau gagal dimuat (mis. manga di MangaDex tanpa cover art)
+- 🔧 Ukuran cover MangaDex diubah dari `.256.jpg` ke `.512.jpg` yang lebih andal tersedia untuk semua file cover
+- 🔄 Service Worker tidak lagi menyimpan respons gambar yang gagal/error ke cache, dan versi cache dinaikkan (`mangaku-cache-v3`) sehingga cache lama yang rusak dibersihkan saat update
+
 ## [1.0.0] - 2024
 
 ### ✨ Fitur Baru

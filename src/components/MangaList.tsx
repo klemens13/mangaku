@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Manga, ReadingProgress } from '../types';
+import { mangadexAPI } from '../services/mangadex';
 
 interface Props {
   mangaList: Manga[];
@@ -8,16 +9,44 @@ interface Props {
   onSelectManga: (manga: Manga) => void;
   onToggleBookmark: (mangaId: string) => void;
   isOnline: boolean;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
-export default function MangaList({ mangaList, progress, bookmarks, onSelectManga, onToggleBookmark, isOnline }: Props) {
+export default function MangaList({ mangaList, progress, bookmarks, onSelectManga, onToggleBookmark, isOnline, loading, error, onRetry }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'bookmarks' | 'continue'>('all');
+  const [searchResults, setSearchResults] = useState<Manga[] | null>(null);
+  const [searching, setSearching] = useState(false);
 
-  const filteredManga = mangaList.filter((manga) => {
-    const matchesSearch = manga.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  // Search from API when query changes
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      const timer = setTimeout(async () => {
+        try {
+          setSearching(true);
+          const results = await mangadexAPI.searchManga(searchQuery);
+          setSearchResults(results);
+        } catch (err) {
+          console.error('Search failed:', err);
+          setSearchResults(null);
+        } finally {
+          setSearching(false);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setSearchResults(null);
+    }
+  }, [searchQuery]);
+
+  const filteredManga = (searchResults || mangaList).filter((manga) => {
+    const matchesSearch = searchResults ? true : (
+      manga.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       manga.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      manga.genre.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()));
+      manga.genre.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
     
     if (activeTab === 'bookmarks') {
       return matchesSearch && bookmarks.includes(manga.id);
@@ -40,12 +69,20 @@ export default function MangaList({ mangaList, progress, bookmarks, onSelectMang
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-white">MangaKu</h1>
-          <p className="text-sm text-gray-400">Baca manga favoritmu</p>
+          <p className="text-sm text-gray-400">Baca manga dari MangaDex</p>
         </div>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-orange-500'}`}></span>
           <span className="text-xs text-gray-400">{isOnline ? 'Online' : 'Offline'}</span>
         </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-blue-900/20 border border-blue-800/50 rounded-xl p-3 mb-4">
+        <p className="text-xs text-blue-300">
+          ℹ️ Manga berasal dari <a href="https://mangadex.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-200">MangaDex</a> - Platform baca manga legal & gratis. 
+          Dukung creator dengan membeli manga official!
+        </p>
       </div>
 
       {/* Search */}
@@ -83,13 +120,40 @@ export default function MangaList({ mangaList, progress, bookmarks, onSelectMang
         ))}
       </div>
 
+      {/* Loading Indicator */}
+      {(loading || searching) && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="inline-block w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-gray-400 text-sm">
+              {searching ? 'Mencari manga...' : 'Memuat manga dari MangaDex...'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && !loading && (
+        <div className="bg-red-900/20 border border-red-800 rounded-xl p-4 mb-4">
+          <p className="text-red-400 text-sm mb-2">{error}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+            >
+              Coba Lagi
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Manga Grid */}
-      {filteredManga.length === 0 ? (
+      {!loading && !searching && filteredManga.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">Tidak ada manga ditemukan</p>
           <p className="text-gray-600 text-sm mt-2">Coba kata kunci lain</p>
         </div>
-      ) : (
+      ) : !loading && !searching ? (
         <div className="grid grid-cols-3 gap-3">
           {filteredManga.map((manga) => {
             const latestProgress = getLatestProgress(manga.id);
@@ -157,7 +221,7 @@ export default function MangaList({ mangaList, progress, bookmarks, onSelectMang
             );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

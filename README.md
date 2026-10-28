@@ -49,6 +49,31 @@ npm run dev
 npm run build
 ```
 
+## 🖥️ Versi Windows Desktop
+
+Aplikasi juga tersedia sebagai aplikasi desktop Windows (.exe) menggunakan Electron.
+
+### Quick Start Windows
+
+1. **Install Node.js** dari https://nodejs.org
+2. **Double-click** `setup-windows.bat` (install dependencies)
+3. **Double-click** `run-windows.bat` (jalankan aplikasi)
+
+### Buat Installer Windows
+
+```bash
+# Jalankan script build
+build-windows.bat
+
+# Atau manual
+npm run build
+npx electron-builder --win --config electron-builder.yml
+```
+
+File installer akan tersedia di folder `release/`
+
+📖 Baca [README-WINDOWS.md](README-WINDOWS.md) untuk detail lengkap
+
 ## 📱 Install di Android
 
 1. Deploy aplikasi ke hosting (Netlify/Vercel/GitHub Pages)

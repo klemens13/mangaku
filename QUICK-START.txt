@@ -1,0 +1,117 @@
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║              📱 MangaKu - Quick Start                      ║
+║         Aplikasi Baca Manga untuk Windows                  ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 PERSYARATAN SISTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Windows 7 SP1 / 8 / 10 / 11
+✓ Node.js (download dari https://nodejs.org)
+✓ RAM minimal 2 GB
+✓ Storage 200 MB
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 CARA CEPAT (3 LANGKAH)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  Install Node.js
+    → Download dari https://nodejs.org (pilih LTS)
+    → Install sampai selesai
+    → Restart komputer (opsional)
+
+2️⃣  Double-click file: setup-windows.bat
+    → Tunggu sampai selesai (5-10 menit)
+    → Script akan install semua dependencies
+
+3️⃣  Double-click file: run-windows.bat
+    → Aplikasi MangaKu akan terbuka
+    → Selesai! 🎉
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 CARA BUAT INSTALLER (.exe)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Jika ingin membuat file installer untuk diinstall permanen:
+
+1. Pastikan sudah jalankan setup-windows.bat
+2. Double-click file: build-windows.bat
+3. Tunggu proses build (10-15 menit)
+4. Buka folder: release\
+5. File installer: MangaKu-1.0.0-Setup.exe
+6. Double-click untuk install
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⌨️  KEYBOARD SHORTCUTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ctrl + R      → Refresh halaman
+Ctrl + +      → Zoom in
+Ctrl + -      → Zoom out
+Ctrl + 0      → Reset zoom
+F11           → Fullscreen
+F12           → Developer tools
+Ctrl + Q      → Keluar aplikasi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 FILE PENTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+setup-windows.bat      → Install dependencies (jalankan pertama kali)
+run-windows.bat        → Jalankan aplikasi
+build-windows.bat      → Buat installer .exe
+configure-electron.bat → Konfigurasi lanjutan (opsional)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ "Node.js tidak ditemukan"
+   → Install Node.js dari https://nodejs.org
+   → Restart Command Prompt
+   → Coba lagi
+
+❌ "Gagal install dependencies"
+   → Cek koneksi internet
+   → Matikan antivirus sementara
+   → Jalankan sebagai Administrator
+
+❌ Aplikasi tidak terbuka
+   → Jalankan run-windows.bat
+   → Tunggu sampai window muncul
+   → Jika masih error, cek log
+
+❌ Build gagal
+   → Pastikan sudah jalankan setup-windows.bat
+   → Hapus folder node_modules
+   → Jalankan setup-windows.bat lagi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Download chapter untuk baca offline
+• Progress baca tersimpan otomatis
+• Gunakan mode scroll vertikal untuk pengalaman terbaik
+• Tekan F11 untuk fullscreen saat membaca
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 BANTUAN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Baca file: README-WINDOWS.md untuk dokumentasi lengkap
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Made with ❤️ for manga lovers

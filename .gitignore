@@ -1,10 +1,19 @@
 # Dependencies
 node_modules/
 package-lock.json
+yarn.lock
 
 # Build output
 dist/
 build/
+release/
+
+# Electron
+release/
+*.exe
+*.dmg
+*.AppImage
+*.deb
 
 # Environment variables
 .env

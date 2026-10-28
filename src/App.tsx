@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Manga, ReadingProgress } from './types';
 import { mangaData } from './data/manga';
+import { mangadexAPI } from './services/mangadex';
 import { getReadingProgress, getBookmarks, isBookmarked, toggleBookmark, getSettings, saveSettings, AppSettings } from './utils/storage';
 import MangaList from './components/MangaList';
 import MangaDetail from './components/MangaDetail';
@@ -21,6 +22,9 @@ export default function App() {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [mangaList, setMangaList] = useState<Manga[]>(mangaData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setProgress(getReadingProgress());
@@ -37,15 +41,50 @@ export default function App() {
       navigator.serviceWorker.register('/sw.js').catch(console.error);
     }
 
+    // Load manga from MangaDex API
+    loadMangaFromAPI();
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  const handleSelectManga = (manga: Manga) => {
+  const loadMangaFromAPI = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const manga = await mangadexAPI.getPopularManga(20);
+      
+      if (manga.length > 0) {
+        setMangaList(manga);
+      }
+    } catch (err) {
+      console.error('Failed to load manga from API:', err);
+      setError('Gagal memuat manga dari server. Menggunakan data offline.');
+      // Tetap gunakan data offline jika API gagal
+      setMangaList(mangaData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectManga = async (manga: Manga) => {
     setSelectedManga(manga);
     setCurrentPage('detail');
+    
+    // Jika chapters kosong, fetch dari API
+    if (manga.chapters.length === 0) {
+      try {
+        const details = await mangadexAPI.getMangaDetails(manga.id);
+        if (details) {
+          setSelectedManga(details);
+        }
+      } catch (err) {
+        console.error('Failed to load manga details:', err);
+      }
+    }
   };
 
   const handleReadChapter = (manga: Manga, chapterIndex: number, page: number = 0) => {
@@ -90,12 +129,15 @@ export default function App() {
       <main className="flex-1 pb-16 overflow-auto">
         {currentPage === 'home' && (
           <MangaList
-            mangaList={mangaData}
+            mangaList={mangaList}
             progress={progress}
             bookmarks={bookmarks}
             onSelectManga={handleSelectManga}
             onToggleBookmark={handleToggleBookmark}
             isOnline={isOnline}
+            loading={loading}
+            error={error}
+            onRetry={loadMangaFromAPI}
           />
         )}
         {currentPage === 'library' && (

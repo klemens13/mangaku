@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Manga } from '../types';
 import { AppSettings } from '../utils/storage';
 import { saveReadingProgress, cacheChapterPages, isChapterDownloaded } from '../utils/storage';
+import { mangadexAPI } from '../services/mangadex';
 
 interface Props {
   manga: Manga;
@@ -19,6 +20,8 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [pages, setPages] = useState<string[]>([]);
+  const [loadingPages, setLoadingPages] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const chapter = manga.chapters[chapterIndex];
@@ -27,7 +30,28 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
   useEffect(() => {
     setCurrentPage(startPage);
     setDownloaded(isChapterDownloaded(manga.id, chapter.id));
+    loadChapterPages();
   }, [chapterIndex, startPage, manga.id, chapter.id]);
+
+  const loadChapterPages = async () => {
+    try {
+      setLoadingPages(true);
+      
+      // Jika chapter sudah punya pages, gunakan itu
+      if (chapter.pages && chapter.pages.length > 0) {
+        setPages(chapter.pages);
+      } else {
+        // Fetch dari API
+        const fetchedPages = await mangadexAPI.getChapterPages(chapter.id);
+        setPages(fetchedPages);
+      }
+    } catch (err) {
+      console.error('Failed to load chapter pages:', err);
+      setPages([]);
+    } finally {
+      setLoadingPages(false);
+    }
+  };
 
   // Save progress
   useEffect(() => {
@@ -61,7 +85,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
   };
 
   const goToNextPage = () => {
-    if (currentPage < chapter.pages.length - 1) {
+    if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
     }
   };
@@ -90,7 +114,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      await cacheChapterPages(chapter.pages, manga.id, chapter.id);
+      await cacheChapterPages(pages, manga.id, chapter.id);
       setDownloaded(true);
       setShowDownloadPrompt(false);
     } catch (e) {
@@ -225,7 +249,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
             {downloaded ? '✅ Chapter sudah diunduh' : '📥 Download untuk offline'}
           </p>
           <p className="text-gray-400 text-xs mb-3">
-            {chapter.pages.length} halaman • ~{Math.round(chapter.pages.length * 0.5)}MB
+            {pages.length} halaman • ~{Math.round(pages.length * 0.5)}MB
           </p>
           {!downloaded && (
             <button
@@ -247,14 +271,24 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
         </div>
       )}
 
+      {/* Loading Pages */}
+      {loadingPages && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-400 text-sm">Memuat halaman...</p>
+          </div>
+        </div>
+      )}
+
       {/* Manga Page - Vertical Scroll Mode */}
-      {settings.readingMode === 'vertical' ? (
+      {!loadingPages && settings.readingMode === 'vertical' ? (
         <div
           className="flex-1 overflow-y-auto"
           onClick={toggleControls}
         >
           <div className="flex flex-col items-center">
-            {chapter.pages.map((page, index) => (
+            {pages.map((page, index) => (
               failedImages.has(page) ? (
                 <div key={page} className="w-full max-w-[800px] mx-auto min-h-[200px] flex items-center justify-center bg-[#1a1a2e]">
                   <div className="text-center p-4">
@@ -300,7 +334,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
             </div>
           </div>
         </div>
-      ) : (
+      ) : !loadingPages ? (
         /* Page-by-page Mode */
         <div
           className="flex-1 flex items-center justify-center relative select-none"
@@ -308,7 +342,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
           onTouchEnd={handleTouchEnd}
           onClick={handleTap}
         >
-          {failedImages.has(chapter.pages[currentPage]) ? (
+          {failedImages.has(pages[currentPage]) ? (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <span className="text-4xl mb-3">📄</span>
               <p className="text-gray-400 text-sm">Gagal memuat halaman</p>
@@ -317,7 +351,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
                   e.stopPropagation();
                   setFailedImages(prev => {
                     const next = new Set(prev);
-                    next.delete(chapter.pages[currentPage]);
+                    next.delete(pages[currentPage]);
                     return next;
                   });
                 }}
@@ -328,10 +362,10 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
             </div>
           ) : (
             <img
-              src={chapter.pages[currentPage]}
+              src={pages[currentPage]}
               alt={`Page ${currentPage + 1}`}
               className="max-h-full max-w-full object-contain"
-              onError={() => handleImageError(chapter.pages[currentPage])}
+              onError={() => handleImageError(pages[currentPage])}
             />
           )}
           
@@ -350,7 +384,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
               <button
                 onClick={(e) => { e.stopPropagation(); goToNextPage(); }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center"
-                disabled={currentPage === chapter.pages.length - 1}
+                disabled={currentPage === pages.length - 1}
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -359,7 +393,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
             </>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Bottom Controls */}
       {showControls && (
@@ -370,7 +404,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
               <input
                 type="range"
                 min={0}
-                max={chapter.pages.length - 1}
+                max={pages.length - 1}
                 value={currentPage}
                 onChange={(e) => setCurrentPage(Number(e.target.value))}
                 className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
@@ -380,8 +414,8 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
           
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">
-              {settings.readingMode === 'horizontal' && `Halaman ${currentPage + 1} / ${chapter.pages.length}`}
-              {settings.readingMode === 'vertical' && `Scroll Mode • ${chapter.pages.length} halaman`}
+              {settings.readingMode === 'horizontal' && `Halaman ${currentPage + 1} / ${pages.length}`}
+              {settings.readingMode === 'vertical' && `Scroll Mode • ${pages.length} halaman`}
             </span>
             <div className="flex gap-2">
               <button
@@ -395,7 +429,7 @@ export default function MangaReader({ manga, chapterIndex, startPage, settings, 
               </button>
               <button
                 onClick={goToNextPage}
-                disabled={currentPage === chapter.pages.length - 1 && settings.readingMode === 'horizontal'}
+                disabled={currentPage === pages.length - 1 && settings.readingMode === 'horizontal'}
                 className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center disabled:opacity-30"
               >
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

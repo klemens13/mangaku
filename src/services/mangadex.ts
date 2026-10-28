@@ -1,7 +1,14 @@
 import axios from 'axios';
 import { Manga, Chapter } from '../types';
 
-const MANGADEX_API = 'https://api.mangadex.org';
+// Di situs web, request lewat proxy Netlify Function karena MangaDex memblokir CORS
+// dari domain pihak ketiga. Dev server (localhost) dan Electron (file://) tetap langsung.
+const isHostedWeb =
+  typeof window !== 'undefined' &&
+  window.location.protocol.startsWith('http') &&
+  !['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const MANGADEX_API = isHostedWeb ? '/api/mangadex' : 'https://api.mangadex.org';
 
 // Hanya tampilkan konten yang aman untuk semua umur
 const CONTENT_RATING = ['safe', 'suggestive'];

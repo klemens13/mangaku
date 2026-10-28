@@ -1,5 +1,6 @@
 import { Manga, ReadingProgress } from '../types';
 import { getDownloads, getDownloadedChapters } from '../utils/storage';
+import MangaCover from './MangaCover';
 
 interface Props {
   mangaList: Manga[];
@@ -70,7 +71,7 @@ export default function Library({ mangaList, progress, bookmarks, onSelectManga,
                   className="flex items-center gap-3 bg-[#1a1a2e] rounded-xl p-3 border border-gray-800 cursor-pointer hover:bg-[#252547] transition-colors"
                   onClick={() => onSelectManga(manga)}
                 >
-                  <img
+                  <MangaCover
                     src={manga.cover}
                     alt={manga.title}
                     className="w-12 h-16 rounded-lg object-cover"
@@ -119,7 +120,7 @@ export default function Library({ mangaList, progress, bookmarks, onSelectManga,
                   className="flex items-center gap-3 bg-[#1a1a2e] rounded-xl p-3 border border-gray-800 cursor-pointer hover:bg-[#252547] transition-colors"
                   onClick={() => onSelectManga(manga)}
                 >
-                  <img
+                  <MangaCover
                     src={manga.cover}
                     alt={manga.title}
                     className="w-12 h-16 rounded-lg object-cover"
@@ -148,7 +149,7 @@ export default function Library({ mangaList, progress, bookmarks, onSelectManga,
               className="flex items-center gap-3 bg-[#1a1a2e] rounded-xl p-3 border border-gray-800 cursor-pointer hover:bg-[#252547] transition-colors"
               onClick={() => onSelectManga(manga)}
             >
-              <img
+              <MangaCover
                 src={manga.cover}
                 alt={manga.title}
                 className="w-12 h-16 rounded-lg object-cover"

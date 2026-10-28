@@ -57,14 +57,35 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Open external links in browser
+  // Open external links in browser (https only)
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (isSafeExternalUrl(url)) {
+      shell.openExternal(url);
+    }
     return { action: 'deny' };
+  });
+
+  // Prevent the window from navigating away from the app
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const appUrl = mainWindow.webContents.getURL();
+    if (new URL(url).origin !== new URL(appUrl).origin) {
+      event.preventDefault();
+      if (isSafeExternalUrl(url)) {
+        shell.openExternal(url);
+      }
+    }
   });
 
   // Create custom menu
   createMenu();
+}
+
+function isSafeExternalUrl(url) {
+  try {
+    return new URL(url).protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 function createMenu() {
@@ -123,13 +144,14 @@ function createMenu() {
             mainWindow.setFullScreen(!mainWindow.isFullScreen());
           }
         },
-        {
+        // DevTools hanya tersedia saat development
+        ...(app.isPackaged ? [] : [{
           label: 'Toggle DevTools',
           accelerator: 'F12',
           click: () => {
             mainWindow.webContents.toggleDevTools();
           }
-        }
+        }])
       ]
     },
     {

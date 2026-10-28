@@ -1,4 +1,7 @@
-const CACHE_NAME = 'mangaku-cache-v1';
+// Naikkan versi ini setiap rilis agar cache lama dibersihkan
+const CACHE_NAME = 'mangaku-cache-v2';
+// Cache gambar chapter yang diunduh pengguna (dikelola dari aplikasi)
+const IMAGE_CACHE_NAME = 'mangaku-images-v1';
 const OFFLINE_URL = '/';
 
 const PRECACHE_URLS = [
@@ -24,7 +27,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name !== CACHE_NAME && name !== IMAGE_CACHE_NAME)
           .map((name) => caches.delete(name))
       );
     })
@@ -79,6 +82,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Only cache same-origin assets; API responses always go to the network
+  if (new URL(event.request.url).origin !== self.location.origin) return;
+
   // For other resources, use stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then((cached) => {
@@ -102,11 +108,10 @@ self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  if (event.data === 'CACHE_URLS') {
-    const urls = event.data.urls;
+  if (event.data && event.data.type === 'CACHE_URLS' && Array.isArray(event.data.urls)) {
     event.waitUntil(
       caches.open(CACHE_NAME).then((cache) => {
-        return cache.addAll(urls);
+        return cache.addAll(event.data.urls);
       })
     );
   }

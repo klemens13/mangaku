@@ -8,11 +8,14 @@ interface Props {
 export default function Settings({ settings, onSettingsChange }: Props) {
   const downloads = getDownloads();
 
-  const handleClearDownloads = () => {
+  const handleClearDownloads = async () => {
     if (confirm('Hapus semua data download?')) {
       downloads.forEach(d => {
         removeDownload(d.mangaId, d.chapterId);
       });
+      if ('caches' in window) {
+        await caches.delete('mangaku-images-v1').catch(() => false);
+      }
       window.location.reload();
     }
   };

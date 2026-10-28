@@ -46,3 +46,6 @@ coverage/
 .cache/
 *.tgz
 .next/
+
+# Local Netlify folder
+.netlify

@@ -21,7 +21,7 @@ export default function App() {
   const [progress, setProgress] = useState<ReadingProgress[]>([]);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [settings, setSettings] = useState<AppSettings>(getSettings());
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [mangaList, setMangaList] = useState<Manga[]>(mangaData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +30,18 @@ export default function App() {
     setProgress(getReadingProgress());
     setBookmarks(getBookmarks());
 
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
+    const handleOnline = () => {
+      setIsOnline(true);
+      setError(null);
+      void loadMangaFromAPI();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      setMangaList(mangaData);
+      setError('Mode offline: menampilkan data lokal.');
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
@@ -42,7 +51,12 @@ export default function App() {
     }
 
     // Load manga from MangaDex API
-    loadMangaFromAPI();
+    if (!navigator.onLine) {
+      setMangaList(mangaData);
+      setError('Mode offline: menampilkan data lokal.');
+    } else {
+      void loadMangaFromAPI();
+    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -51,20 +65,29 @@ export default function App() {
   }, []);
 
   const loadMangaFromAPI = async () => {
+    if (!navigator.onLine) {
+      setMangaList(mangaData);
+      setError('Mode offline: menampilkan data lokal.');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const manga = await mangadexAPI.getPopularManga(20);
-      
-      if (manga.length > 0) {
+
+      if (Array.isArray(manga) && manga.length > 0) {
         setMangaList(manga);
+        return;
       }
+
+      setMangaList(mangaData);
     } catch (err) {
       console.error('Failed to load manga from API:', err);
-      setError('Gagal memuat manga dari server. Menggunakan data offline.');
-      // Tetap gunakan data offline jika API gagal
-      setMangaList(mangaData);
+      setMangaList((current) => current.length > 0 ? current : mangaData);
+      setError('Tidak dapat terhubung ke server MangaDex. Menampilkan data offline.');
     } finally {
       setLoading(false);
     }
@@ -73,7 +96,7 @@ export default function App() {
   const handleSelectManga = async (manga: Manga) => {
     setSelectedManga(manga);
     setCurrentPage('detail');
-    
+
     // Jika chapters kosong, fetch dari API
     if (manga.chapters.length === 0) {
       try {
@@ -137,7 +160,7 @@ export default function App() {
             isOnline={isOnline}
             loading={loading}
             error={error}
-            onRetry={loadMangaFromAPI}
+            onRetry={() => void loadMangaFromAPI()}
           />
         )}
         {currentPage === 'library' && (

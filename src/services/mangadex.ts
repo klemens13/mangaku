@@ -3,12 +3,47 @@ import { Manga, Chapter } from '../types';
 
 // Di situs web, request lewat proxy Netlify Function karena MangaDex memblokir CORS
 // dari domain pihak ketiga. Dev server (localhost) dan Electron (file://) tetap langsung.
-const isHostedWeb =
-  typeof window !== 'undefined' &&
-  window.location.protocol.startsWith('http') &&
-  !['localhost', '127.0.0.1'].includes(window.location.hostname);
+const MANGADEX_PROXY = '/api/mangadex';
+const MANGADEX_DIRECT = 'https://api.mangadex.org';
 
-const MANGADEX_API = isHostedWeb ? '/api/mangadex' : 'https://api.mangadex.org';
+const getMangaDexBaseUrls = (): string[] => {
+  if (typeof window === 'undefined') return [MANGADEX_DIRECT];
+
+  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const isHttp = window.location.protocol.startsWith('http');
+
+  const candidates = [
+    isHttp && !isLocal ? MANGADEX_PROXY : MANGADEX_DIRECT,
+    MANGADEX_DIRECT,
+  ];
+
+  return Array.from(new Set(candidates.filter(Boolean)));
+};
+
+const requestMangaDex = async (endpoint: string, params?: Record<string, any>) => {
+  const candidates = getMangaDexBaseUrls();
+  let lastError: unknown = null;
+
+  for (const baseUrl of candidates) {
+    try {
+      return await axios.get(`${baseUrl}${endpoint}`, { params });
+    } catch (error) {
+      lastError = error;
+      const status = (error as any)?.response?.status;
+
+      // If the proxy route is missing on a static host (GitHub Pages, Vercel, etc.),
+      // fallback to the direct MangaDex API. If direct API is blocked by CORS,
+      // let the caller handle the real failure.
+      if (status === 404 || status === 502 || status === 503) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw lastError;
+};
 
 // Hanya tampilkan konten yang aman untuk semua umur
 const CONTENT_RATING = ['safe', 'suggestive'];
@@ -23,16 +58,14 @@ export const mangadexAPI = {
   async getPopularManga(limit: number = 20, offset: number = 0): Promise<Manga[]> {
     try {
       await delay(300); // Rate limiting
-      
-      const response = await axios.get(`${MANGADEX_API}/manga`, {
-        params: {
-          limit,
-          offset,
-          'order[followedCount]': 'desc',
-          'includes[]': ['cover_art', 'author', 'artist'],
-          'contentRating[]': CONTENT_RATING,
-          'availableTranslatedLanguage[]': ['id', 'en']
-        }
+
+      const response = await requestMangaDex('/manga', {
+        limit,
+        offset,
+        'order[followedCount]': 'desc',
+        'includes[]': ['cover_art', 'author', 'artist'],
+        'contentRating[]': CONTENT_RATING,
+        'availableTranslatedLanguage[]': ['id', 'en']
       });
 
       return this.transformMangaList(response.data.data);
@@ -48,15 +81,13 @@ export const mangadexAPI = {
   async searchManga(title: string, limit: number = 20): Promise<Manga[]> {
     try {
       await delay(300);
-      
-      const response = await axios.get(`${MANGADEX_API}/manga`, {
-        params: {
-          title,
-          limit,
-          'includes[]': ['cover_art', 'author', 'artist'],
-          'contentRating[]': CONTENT_RATING,
-          'availableTranslatedLanguage[]': ['id', 'en']
-        }
+
+      const response = await requestMangaDex('/manga', {
+        title,
+        limit,
+        'includes[]': ['cover_art', 'author', 'artist'],
+        'contentRating[]': CONTENT_RATING,
+        'availableTranslatedLanguage[]': ['id', 'en']
       });
 
       return this.transformMangaList(response.data.data);
@@ -72,11 +103,9 @@ export const mangadexAPI = {
   async getMangaDetails(mangaId: string): Promise<Manga | null> {
     try {
       await delay(300);
-      
-      const response = await axios.get(`${MANGADEX_API}/manga/${mangaId}`, {
-        params: {
-          'includes[]': ['cover_art', 'author', 'artist']
-        }
+
+      const response = await requestMangaDex(`/manga/${mangaId}`, {
+        'includes[]': ['cover_art', 'author', 'artist']
       });
 
       // Endpoint detail tidak mendukung filter contentRating, jadi cek manual
@@ -85,11 +114,11 @@ export const mangadexAPI = {
       }
 
       const manga = this.transformManga(response.data.data);
-      
+
       // Ambil chapters
       const chapters = await this.getMangaChapters(mangaId);
       manga.chapters = chapters;
-      
+
       return manga;
     } catch (error) {
       console.error('Error fetching manga details:', error);
@@ -103,15 +132,13 @@ export const mangadexAPI = {
   async getMangaChapters(mangaId: string, limit: number = 100): Promise<Chapter[]> {
     try {
       await delay(300);
-      
-      const response = await axios.get(`${MANGADEX_API}/manga/${mangaId}/feed`, {
-        params: {
-          limit,
-          'translatedLanguage[]': ['id', 'en'],
-          'contentRating[]': CONTENT_RATING,
-          'order[chapter]': 'asc',
-          'includeFuturePublishAt': 0
-        }
+
+      const response = await requestMangaDex(`/manga/${mangaId}/feed`, {
+        limit,
+        'translatedLanguage[]': ['id', 'en'],
+        'contentRating[]': CONTENT_RATING,
+        'order[chapter]': 'asc',
+        'includeFuturePublishAt': 0
       });
 
       return this.transformChapters(response.data.data);
@@ -127,9 +154,9 @@ export const mangadexAPI = {
   async getChapterPages(chapterId: string): Promise<string[]> {
     try {
       await delay(300);
-      
-      const response = await axios.get(`${MANGADEX_API}/at-home/server/${chapterId}`);
-      
+
+      const response = await requestMangaDex(`/at-home/server/${chapterId}`);
+
       const { baseUrl, chapter } = response.data;
       const pages: string[] = [];
 
@@ -159,35 +186,35 @@ export const mangadexAPI = {
    */
   transformManga(item: any): Manga {
     const { id, attributes } = item;
-    
+
     // Extract relationships
     const coverRel = item.relationships?.find((r: any) => r.type === 'cover_art');
     const authorRel = item.relationships?.find((r: any) => r.type === 'author');
     const artistRel = item.relationships?.find((r: any) => r.type === 'artist');
 
     // Get title (prefer English, then romanized, then any)
-    const title = attributes.title.en || 
-                  attributes.title['ja-ro'] || 
+    const title = attributes.title.en ||
+                  attributes.title['ja-ro'] ||
                   attributes.title['zh-ro'] ||
-                  Object.values(attributes.title)[0] || 
+                  Object.values(attributes.title)[0] ||
                   'Unknown Title';
 
     // Get description
-    const description = attributes.description.id || 
-                       attributes.description.en || 
+    const description = attributes.description.id ||
+                       attributes.description.en ||
                        attributes.description['ja-ro'] ||
-                       Object.values(attributes.description)[0] || 
+                       Object.values(attributes.description)[0] ||
                        '';
 
     // Get cover URL (format .512.jpg lebih andal; fallback placeholder di UI jika kosong)
     const coverFileName = coverRel?.attributes?.fileName;
-    const cover = coverFileName 
+    const cover = coverFileName
       ? `https://uploads.mangadex.org/covers/${id}/${coverFileName}.512.jpg`
       : '';
 
     // Get author
-    const author = authorRel?.attributes?.name || 
-                   artistRel?.attributes?.name || 
+    const author = authorRel?.attributes?.name ||
+                   artistRel?.attributes?.name ||
                    'Unknown Author';
 
     // Get genres/tags
@@ -222,7 +249,7 @@ export const mangadexAPI = {
       .filter(chapter => chapter.attributes.chapter) // Filter out chapters without number
       .map((item, index) => {
         const { id, attributes } = item;
-        
+
         return {
           id,
           number: parseFloat(attributes.chapter) || index + 1,

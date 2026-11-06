@@ -1,7 +1,7 @@
 // Naikkan versi ini setiap rilis agar cache lama dibersihkan
-const CACHE_NAME = 'mangaku-cache-v3';
+const CACHE_NAME = 'mangaku-cache-v4';
 // Cache gambar chapter yang diunduh pengguna (dikelola dari aplikasi)
-const IMAGE_CACHE_NAME = 'mangaku-images-v1';
+const IMAGE_CACHE_NAME = 'mangaku-images-v2';
 const OFFLINE_URL = '/';
 
 const PRECACHE_URLS = [

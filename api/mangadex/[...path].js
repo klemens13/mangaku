@@ -29,8 +29,14 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Vercel may add the catch-all route parameter (___path) to the query string.
+  // It is routing metadata, not a MangaDex API parameter, so never forward it.
+  const query = new URLSearchParams(requestUrl.searchParams);
+  query.delete('___path');
+  const queryString = query.toString();
+
   try {
-    const upstream = await fetch(`${MANGADEX_API}${path}${requestUrl.search}`, {
+    const upstream = await fetch(`${MANGADEX_API}${path}${queryString ? `?${queryString}` : ''}`, {
       headers: {
         'User-Agent': 'MangaKu/1.0',
         Accept: 'application/json',

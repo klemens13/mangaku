@@ -2,6 +2,21 @@ const MANGADEX_API = 'https://api.mangadex.org';
 const PREFIX = '/api/mangadex';
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
+// Only forward parameters the application intentionally uses. This prevents
+// Vercel's internal catch-all parameter (___path) from reaching MangaDex.
+const ALLOWED_QUERY_PARAMS = new Set([
+  'limit',
+  'offset',
+  'title',
+  'order[followedCount]',
+  'order[chapter]',
+  'includes[]',
+  'contentRating[]',
+  'availableTranslatedLanguage[]',
+  'translatedLanguage[]',
+  'includeFuturePublishAt',
+]);
+
 // Keep this allowlist in sync with the MangaDex endpoints used by the app.
 const ROUTES = [
   { pattern: /^\/manga$/, cacheSeconds: 600 },
@@ -29,10 +44,14 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Vercel may add the catch-all route parameter (___path) to the query string.
-  // It is routing metadata, not a MangaDex API parameter, so never forward it.
-  const query = new URLSearchParams(requestUrl.searchParams);
-  query.delete('___path');
+  // Rebuild the query from an explicit allowlist; never forward Vercel routing
+  // metadata or any other parameter that the app does not intentionally send.
+  const query = new URLSearchParams();
+  for (const [key, value] of requestUrl.searchParams.entries()) {
+    if (ALLOWED_QUERY_PARAMS.has(key)) {
+      query.append(key, value);
+    }
+  }
   const queryString = query.toString();
 
   try {
